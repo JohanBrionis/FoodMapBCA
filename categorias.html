@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+
+  <title>Explorar | FoodMap</title>
+  
+  <style>
+    /* =========================
+       ESTILOS GENERALES
+    ========================= */
+    :root {
+      --primary: #ff5722;
+      --bg: #f8f9fa;
+      --text-dark: #2d3436;
+      --text-light: #636e72;
+      --card-bg: #ffffff;
+      --success: #00b894;
+      --danger: #d63031;
+      --warning: #fdcb6e;
+      --shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+
+    body {
+      background: var(--bg);
+      margin: 0;
+      padding: 0;
+      /* Damos espacio extra abajo para: Nav (65px) + Banner AdMob (50px aprox) */
+      padding-bottom: 130px; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* HEADER */
+    header {
+      padding: 20px 20px 10px 20px;
+      background: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+
+    .saludo { font-size: 14px; color: var(--text-light); font-weight: 500; }
+    h1 { font-size: 24px; font-weight: 800; margin: 5px 0 15px 0; color: var(--text-dark); }
+
+    .search-container { position: relative; }
+    #buscador {
+      width: 100%; box-sizing: border-box; padding: 12px 15px 12px 45px;
+      border-radius: 12px; border: 1px solid #eee; background: #f1f2f6;
+      font-size: 16px; outline: none; transition: all 0.2s;
+    }
+    #buscador:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.1); }
+    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #999; }
+
+    /* CATEGORÍAS */
+    .cat-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 20px; scrollbar-width: none; }
+    .cat-scroll::-webkit-scrollbar { display: none; }
+    .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 70px; cursor: pointer; opacity: 0.7; transition: 0.2s; }
+    .cat-item.active { opacity: 1; transform: scale(1.05); }
+    .cat-item.active .cat-icon { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(255, 87, 34, 0.4); }
+    .cat-item.active span { color: var(--primary); font-weight: bold; }
+    .cat-icon { width: 55px; height: 55px; background: #fff; border-radius: 18px; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 8px; transition: 0.2s; }
+    .cat-item span { font-size: 12px; color: var(--text-dark); font-weight: 500; }
+
+    /* CHIPS FILTROS */
+    .chips-container { display: flex; gap: 10px; padding: 0 20px; overflow-x: auto; margin-bottom: 20px; scrollbar-width: none; }
+    .chips-container::-webkit-scrollbar { display: none; }
+    .chip { padding: 8px 16px; border-radius: 20px; background: #fff; border: 1px solid #eee; color: var(--text-light); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: 0.2s; }
+    .chip.active { background: var(--text-dark); color: #fff; border-color: var(--text-dark); }
+
+    /* SKELETON LOADING */
+    @keyframes shimmer {
+      0% { background-position: -468px 0; }
+      100% { background-position: 468px 0; }
+    }
+    .skeleton {
+      background: #f6f7f8;
+      background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+      background-repeat: no-repeat;
+      background-size: 800px 100%;
+      animation: shimmer 1.2s linear infinite;
+    }
+    .card-skeleton {
+      margin: 0 20px 15px 20px; border-radius: 16px; padding: 12px;
+      display: flex; gap: 15px; background: white; box-shadow: var(--shadow);
+    }
+    .sk-img { width: 100px; height: 100px; border-radius: 12px; flex-shrink: 0; }
+    .sk-content { flex: 1; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+    .sk-line { height: 14px; border-radius: 4px; width: 80%; }
+    .sk-line.short { width: 40%; }
+    .sk-line.long { width: 90%; }
+
+    /* PLACEHOLDERS VISUALES (Se ocultan cuando carga el anuncio real) */
+    .ad-placeholder {
+      background: #f0f0f0; display: flex; justify-content: center; align-items: center;
+      color: #ccc; font-size: 12px; border-radius: 8px; margin: 0 auto; overflow: hidden;
+    }
+    .ad-native { width: 90%; height: 100px; margin-bottom: 20px; display: none; /* Oculto por ahora */ }
+
+    /* Placeholder para el Anuncio (El espacio que ocupa el anuncio real) */
+.ad-sticky {
+  position: fixed;
+  bottom: 0; /* Pegado al suelo */
+  left: 0;
+  width: 100%;
+  height: 50px; /* Altura estándar de AdMob */
+  background: #f0f0f0; /* Gris clarito por si no carga el anuncio */
+  border-top: 1px solid #e0e0e0;
+  z-index: 10001; /* ENCIMA del Nav si quisieras, pero aquí estará DEBAJO visualmente por la posición */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #999;
+  font-size: 10px;
+}
+
+    /* CARDS */
+    .results-header { padding: 0 20px; font-size: 18px; font-weight: 700; color: var(--text-dark); margin-bottom: 15px; }
+    
+    .card { background: var(--card-bg); margin: 0 20px 15px 20px; border-radius: 16px; padding: 12px; display: flex; gap: 15px; box-shadow: var(--shadow); cursor: pointer; position: relative; overflow: hidden; transition: transform 0.1s; }
+    .card:active { transform: scale(0.98); }
+    .card-img-container { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
+    .card img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; background: #eee; }
+
+    .fav-btn {
+      position: absolute; top: 5px; right: 5px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px);
+      width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+      font-size: 16px; z-index: 10; border: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .fav-btn.active { color: red; }
+
+    .card-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .card-title { font-size: 16px; font-weight: 700; margin: 0 0 4px 0; color: var(--text-dark); }
+    .card-desc { font-size: 12px; color: var(--text-light); margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+    
+    .price-tag { color: #27ae60; font-weight: 700; background: #eafaf1; padding: 4px 8px; border-radius: 6px; }
+    .delivery-tag { display: flex; align-items: center; gap: 4px; color: var(--text-light); }
+    
+    .badges-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .dist-badge { font-size: 11px; color: #1a73e8; background: #e8f0fe; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+    .menu-match-badge { font-size: 11px; color: #e65100; background: #fff3e0; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+    .status-badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+    .status-open { color: var(--success); background: #e3fdf5; }
+    .status-closed { color: var(--danger); background: #ffe6e6; }
+    .status-closing { color: #d35400; background: #ffeaa7; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+  </style>
+</head>
+<body>
+
+  <script src="ubicacion.js"></script>
+  
+  <script src="Components/Nav.js"></script>
+
+  <header>
+    <div class="saludo" id="saludoMsg">Hola, ¿qué comeremos hoy?</div>
+    <h1>Explorar</h1>
+    <div class="search-container">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="buscador" placeholder="Empanadas, salchipapas, asados..." />
+    </div>
+  </header>
+
+  <div class="cat-scroll" id="categoriasNav">
+    <div class="cat-item active" onclick="filtrarCategoria('Todos', this)">
+      <div class="cat-icon">🍽️</div><span>Todos</span>
+    </div>
+    <div class="cat-item" onclick="filtrarCategoria('Favoritos', this)">
+      <div class="cat-icon">❤️</div><span>Favoritos</span>
+    </div>
+    <div class="cat-item" onclick="filtrarCategoria('Fritos', this)">
+      <div class="cat-icon">🥟</div><span>Fritos</span>
+    </div>
+    <div class="cat-item" onclick="filtrarCategoria('Salchipapas', this)">
+      <div class="cat-icon">🍟</div><span>Salchipapa</span>
+    </div>
+    <div class="cat-item" onclick="filtrarCategoria('Hamburguesas', this)">
+      <div class="cat-icon">🍔</div><span>Burgers</span>
+    </div>
+    <div class="cat-item" onclick="filtrarCategoria('Asados', this)">
+      <div class="cat-icon">🥩</div><span>Asados</span>
+    </div>
+    <div class="cat-item" onclick="filtrarCategoria('Bebidas', this)">
+      <div class="cat-icon">🥤</div><span>Bebidas</span>
+    </div>
+  </div>
+
+  <div class="chips-container">
+    <div class="chip" onclick="toggleChip(this, 'delivery')">🛵 Domicilio</div>
+    <div class="chip" onclick="toggleChip(this, 'economico')">💰 Económico</div>
+    <div class="chip" onclick="toggleChip(this, 'abierto')">🟢 Abierto Ahora</div>
+  </div>
+
+  <div class="results-header" id="tituloSeccion">Recomendados para ti</div>
+  
+  <div id="contenedor-lista"></div>
+
+  <script>
+    // ==============================================
+    // 1. LÓGICA DE NEGOCIO (App de Comida)
+    // ==============================================
+    const normalizeText = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+    function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+      if(!lat1 || !lon1 || !lat2 || !lon2) return null;
+      const R = 6371; 
+      const dLat = (lat2 - lat1) * (Math.PI/180);
+      const dLon = (lon2 - lon1) * (Math.PI/180);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c; 
+    }
+
+    function estimarTiempoMinutos(distanciaKm) {
+      if(!distanciaKm) return 0;
+      return Math.round((distanciaKm / 20) * 60 + 10); 
+    }
+
+    function parseHora(horaStr) {
+      if (!horaStr) return null;
+      const s = horaStr.toLowerCase().replace(/\s/g, ''); 
+      let horas = 0; let minutos = 0;
+      const isPM = s.includes('pm'); const isAM = s.includes('am');
+      const match = s.match(/(\d+)(?::(\d+))?/);
+      if (!match) return null;
+      horas = parseInt(match[1]);
+      minutos = match[2] ? parseInt(match[2]) : 0;
+      if (isPM && horas < 12) horas += 12;
+      if (isAM && horas === 12) horas = 0;
+      return horas + (minutos / 60);
+    }
+
+    function obtenerEstadoLocal(horarioStr) {
+      if (!horarioStr) return { estado: 'desconocido', texto: '' };
+      const partes = horarioStr.split('-');
+      if (partes.length !== 2) return { estado: 'desconocido', texto: '' };
+      const abre = parseHora(partes[0]);
+      const cierra = parseHora(partes[1]);
+      if (abre === null || cierra === null) return { estado: 'desconocido', texto: '' };
+      const ahora = new Date();
+      const horaActual = ahora.getHours() + (ahora.getMinutes() / 60);
+      let cierraAjustado = cierra;
+      let horaActualAjustada = horaActual;
+      if (cierra < abre) { cierraAjustado += 24; if (horaActual < abre) horaActualAjustada += 24; }
+      if (horaActualAjustada >= abre && horaActualAjustada < cierraAjustado) {
+        const tiempoRestante = cierraAjustado - horaActualAjustada;
+        if (tiempoRestante <= 1) return { estado: 'closing', texto: '⚠️ Cierra pronto' };
+        return { estado: 'open', texto: '🟢 Abierto' };
+      } else {
+        let abreAjustado = abre;
+        if (horaActualAjustada > cierraAjustado) abreAjustado += 24; 
+        const tiempoParaAbrir = abreAjustado - horaActualAjustada;
+        if (tiempoParaAbrir > 0 && tiempoParaAbrir <= 2) {
+            const h = Math.floor(tiempoParaAbrir);
+            const m = Math.round((tiempoParaAbrir - h) * 60);
+            const textoTiempo = h > 0 ? `${h}h ${m}m` : `${m} min`;
+            return { estado: 'closed', texto: `🕒 Abre en ${textoTiempo}` };
+        }
+        return { estado: 'closed', texto: '🔴 Cerrado' };
+      }
+    }
+
+    let locales = [];
+    let localesFiltrados = [];
+    let favoritos = JSON.parse(localStorage.getItem('favs_foodmap')) || [];
+    let filtrosActivos = { categoria: 'Todos', texto: '', delivery: false, economico: false, abierto: false };
+
+    async function init() {
+      establecerSaludo();
+      
+      const contenedor = document.getElementById('contenedor-lista');
+      contenedor.innerHTML = Array(4).fill(0).map(() => `
+        <div class="card-skeleton">
+          <div class="skeleton sk-img"></div>
+          <div class="sk-content">
+            <div class="skeleton sk-line long"></div>
+            <div class="skeleton sk-line"></div>
+            <div class="skeleton sk-line short"></div>
+          </div>
+        </div>
+      `).join('');
+
+      try {
+        const res = await fetch("locales.json");
+        const data = await res.json();
+        
+        setTimeout(() => {
+            locales = data.locales;
+            localesFiltrados = [...locales];
+            renderizarLista(); 
+        }, 600);
+        
+      } catch (e) { 
+          console.error("Error DB:", e); 
+          contenedor.innerHTML = "<p style='text-align:center; padding:20px'>Error cargando datos 😢</p>";
+      }
+    }
+
+    window.addEventListener('ubicacionActualizada', (e) => renderizarLista());
+
+    function establecerSaludo() {
+      const h = new Date().getHours();
+      const m = document.getElementById('saludoMsg');
+      if (h < 12) m.innerText = "Buenos días, ¿un desayuno bacano?";
+      else if (h < 18) m.innerText = "Buenas tardes, ¿qué almorzamos?";
+      else m.innerText = "Buenas noches, ¿una comida rápida?";
+    }
+
+    function toggleFav(event, id) {
+      event.stopPropagation();
+      const index = favoritos.indexOf(id);
+      if (index === -1) favoritos.push(id);
+      else favoritos.splice(index, 1);
+      localStorage.setItem('favs_foodmap', JSON.stringify(favoritos));
+      if (filtrosActivos.categoria === 'Favoritos') aplicarFiltros();
+      else {
+        const btn = event.currentTarget;
+        btn.classList.toggle('active');
+        btn.innerHTML = favoritos.includes(id) ? '❤️' : '🤍';
+      }
+    }
+
+    function aplicarFiltros() {
+      const textoBusqueda = normalizeText(filtrosActivos.texto);
+
+      localesFiltrados = locales.filter(local => {
+        if (filtrosActivos.categoria === 'Favoritos') {
+           if (!favoritos.includes(local.id)) return false;
+        } 
+        else if (filtrosActivos.categoria !== 'Todos') {
+          const catSelect = normalizeText(filtrosActivos.categoria);
+          const esCategoria = (local.categoria && normalizeText(local.categoria).includes(catSelect)) ||
+                              (local.tags && local.tags.some(tag => normalizeText(tag).includes(catSelect)));
+          if (!esCategoria) return false;
+        }
+
+        if (textoBusqueda) {
+          const matchInfo = normalizeText(local.nombre).includes(textoBusqueda) ||
+                            normalizeText(local.descripcion).includes(textoBusqueda) ||
+                            normalizeText(local.direccion).includes(textoBusqueda);
+          const matchTags = local.tags && local.tags.some(tag => normalizeText(tag).includes(textoBusqueda));
+          const matchMenu = local.menu && local.menu.some(plato => normalizeText(plato.nombre).includes(textoBusqueda));
+
+          if (!matchInfo && !matchTags && !matchMenu) return false;
+          local.matchPlato = matchMenu ? local.menu.find(p => normalizeText(p.nombre).includes(textoBusqueda)).nombre : null;
+        } else {
+          local.matchPlato = null;
+        }
+
+        if (filtrosActivos.delivery && !local.delivery) return false;
+        if (filtrosActivos.economico && local.rangos_precios && local.rangos_precios.max > 25000) return false;
+        
+        if (filtrosActivos.abierto) {
+          const infoEstado = obtenerEstadoLocal(local.horario);
+          if (infoEstado.estado === 'closed') return false;
+        }
+
+        return true;
+      });
+      renderizarLista();
+    }
+
+    function renderizarLista() {
+      const cont = document.getElementById('contenedor-lista');
+      const titulo = document.getElementById('tituloSeccion');
+      cont.innerHTML = "";
+
+      if(filtrosActivos.categoria === 'Favoritos') titulo.innerText = `Tus lugares favoritos ❤️`;
+      else if(filtrosActivos.texto) titulo.innerText = `Resultados para "${filtrosActivos.texto}"`;
+      else titulo.innerText = filtrosActivos.categoria === 'Todos' ? `Todos los lugares (${localesFiltrados.length})` : `${filtrosActivos.categoria}`;
+
+      if (localesFiltrados.length === 0) {
+        cont.innerHTML = `<div class="empty-state"><h3>No encontramos resultados 🤷‍♂️</h3><p>Intenta ajustar los filtros.</p></div>`;
+        return;
+      }
+
+      if(window.userCoords) {
+         localesFiltrados.sort((a, b) => {
+             const dA = calcularDistanciaKm(window.userCoords.lat, window.userCoords.lng, a.coords[0], a.coords[1]);
+             const dB = calcularDistanciaKm(window.userCoords.lat, window.userCoords.lng, b.coords[0], b.coords[1]);
+             return dA - dB;
+         });
+      }
+
+      localesFiltrados.forEach(local => {
+        const precio = local.rangos_precios ? `$${(local.rangos_precios.min/1000).toFixed(0)}k - $${(local.rangos_precios.max/1000).toFixed(0)}k` : '';
+        const infoEstado = obtenerEstadoLocal(local.horario);
+        let badgeClass = '';
+        if(infoEstado.estado === 'open') badgeClass = 'status-open';
+        if(infoEstado.estado === 'closing') badgeClass = 'status-closing';
+        if(infoEstado.estado === 'closed') badgeClass = 'status-closed';
+
+        let badgesHTML = `<span class="status-badge ${badgeClass}">${infoEstado.texto}</span>`;
+
+        if(window.userCoords) {
+          const dist = calcularDistanciaKm(window.userCoords.lat, window.userCoords.lng, local.coords[0], local.coords[1]);
+          const tiempo = estimarTiempoMinutos(dist);
+          badgesHTML += `<span class="dist-badge">📍 ${dist.toFixed(1)} km (~${tiempo} min)</span>`;
+        }
+
+        if (local.matchPlato) {
+          badgesHTML += `<div style="width:100%"><span class="menu-match-badge">🔥 Venden: ${local.matchPlato}</span></div>`;
+        }
+
+        const esFav = favoritos.includes(local.id);
+
+        const html = `
+          <div class="card" onclick="irAlMapa(${local.id}, ${local.coords[0]}, ${local.coords[1]})">
+            <div class="card-img-container">
+              <img src="${local.fotos?.[0] || 'img/default.jpg'}" loading="lazy" alt="${local.nombre}">
+              <button class="fav-btn ${esFav ? 'active' : ''}" onclick="toggleFav(event, ${local.id})">
+                ${esFav ? '❤️' : '🤍'}
+              </button>
+            </div>
+            
+            <div class="card-content">
+              <h3 class="card-title">${local.nombre}</h3>
+              <p class="card-desc">${local.descripcion}</p>
+              
+              <div class="badges-row">
+                ${badgesHTML}
+              </div>
+
+              <div class="card-footer">
+                <span class="delivery-tag">${local.delivery ? '🛵 ' + (local.tiempo_entrega||'30m') : '🏪 Sitio'}</span>
+                <span class="price-tag">${precio}</span>
+              </div>
+            </div>
+          </div>
+        `;
+        cont.innerHTML += html;
+      });
+    }
+
+    document.getElementById('buscador').addEventListener('input', (e) => { filtrosActivos.texto = e.target.value; aplicarFiltros(); });
+    
+    function filtrarCategoria(c, el) { 
+      filtrosActivos.categoria = c; 
+      document.querySelectorAll('.cat-item').forEach(x => x.classList.remove('active')); 
+      el.classList.add('active'); 
+      aplicarFiltros(); 
+    }
+    
+    function toggleChip(el, k) { 
+      filtrosActivos[k] = !filtrosActivos[k]; 
+      el.classList.toggle('active'); 
+      aplicarFiltros(); 
+    }
+    
+    function irAlMapa(id, lat, lng) { window.location.href = `index.html?id=${id}&lat=${lat}&lng=${lng}`; }
+
+    init();
+  </script>
+
+  <script>
+    document.addEventListener('deviceready', async () => {
+      console.log("📱 Dispositivo listo, iniciando AdMob...");
+
+      if (typeof admob === 'undefined') return;
+
+      try {
+        await admob.start();
+
+        // Banner fijo en la parte inferior
+        // (El Nav está fijo abajo, así que el banner se pegará al borde de la pantalla)
+        const banner = new admob.BannerAd({
+          // ID DE PRUEBA (Reemplazar al subir a producción)
+          adUnitId: 'ca-app-pub-3940256099942544/6300978111', 
+          position: 'bottom'
+        });
+        
+        await banner.show();
+        console.log("✅ Banner mostrado correctamente");
+
+      } catch (e) {
+        console.error("❌ Error AdMob:", e);
+      }
+    }, false);
+  </script>
+
+</body>
+</html>

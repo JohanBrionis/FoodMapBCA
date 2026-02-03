@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+
+  <title>Mapa Gastronómico - Barrancabermeja</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#fafafa">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    /* =========================
+       ESTILOS GENERALES
+    ========================= */
+    :root {
+      --primary: #ff5722;
+      --success: #00b894;
+      --danger: #d63031;
+      --warning: #fdcb6e;
+      --text-dark: #2d3436;
+      --text-light: #636e72;
+    }
+
+    body, html {
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #fafafa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden; 
+    }
+
+    /* Ajuste para que el banner de publicidad no tape el mapa/créditos */
+    #map {
+      height: calc(100% - 60px); /* Restamos espacio para el banner */
+      width: 100%;
+      z-index: 1;
+    }
+
+    /* Botón de Reportar */
+    .btn-reportar {
+      display: block; margin-top: 20px; padding: 15px; background: #fff5f5;
+      color: #c0392b; text-align: center; border-radius: 12px; text-decoration: none;
+      font-size: 13px; font-weight: 600; border: 1px dashed #feb2b2; transition: 0.2s;
+    }
+    .btn-reportar:hover { background: #fee2e2; }
+
+    /* Marcadores */
+    .custom-marker {
+      display: flex; justify-content: center; align-items: center;
+      transform-origin: center center; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .custom-marker.selected svg { transform: scale(1.2); filter: drop-shadow(0 4px 8px rgba(255, 87, 34, 0.4)); }
+
+    .label-nombre {
+      background: rgba(255, 255, 255, 0.95); padding: 4px 8px; margin-left: 14px; margin-top: -12px;
+      border-radius: 6px; font-size: 11px; color: #333; font-weight: 700; border: 1px solid #ddd;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15); white-space: nowrap; display: none; pointer-events: none;
+    }
+
+    /* Modal Bottom Sheet */
+    #modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.3); z-index: 9999; display: none; opacity: 0;
+      transition: opacity 0.3s; align-items: flex-end;
+    }
+    #modal.active { display: flex; opacity: 1; }
+    #modal .content {
+      background: #fff; width: 100%; max-height: 85vh; border-radius: 24px 24px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15); transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex;
+      flex-direction: column; overflow: hidden;
+    }
+    #modal.active .content { transform: translateY(0); }
+
+    /* Elementos del Modal */
+    .modal-header-img { position: relative; width: 100%; height: 200px; flex-shrink: 0; }
+    .modal-header-img img { width: 100%; height: 100%; object-fit: cover; background: #eee; }
+
+    .btn-close-float {
+      position: absolute; top: 15px; left: 15px; width: 36px; height: 36px;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); border-radius: 50%; color: white;
+      display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; border: none; z-index: 10;
+    }
+    .btn-fav-float {
+      position: absolute; top: 15px; right: 15px; width: 36px; height: 36px;
+      background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center;
+      font-size: 18px; cursor: pointer; border: none; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .btn-fav-float.active { color: red; }
+
+    .modal-body { padding: 20px; overflow-y: auto; padding-bottom: 40px; }
+    h2 { margin: 0 0 5px 0; font-size: 22px; color: var(--text-dark); }
+    .desc { color: var(--text-light); font-size: 14px; margin-bottom: 12px; line-height: 1.4; }
+
+    .badges-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+    .status-open { background: #e3fdf5; color: var(--success); }
+    .status-closed { background: #ffe6e6; color: var(--danger); }
+    .status-closing { background: #fff3cd; color: #856404; }
+    .dist-badge { background: #e8f0fe; color: #1a73e8; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 25px; }
+    .action-btn {
+      background: #f8f9fa; border: 1px solid #eee; border-radius: 12px; padding: 12px 0;
+      text-align: center; text-decoration: none; color: var(--text-dark); font-size: 12px; font-weight: 600;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+    }
+    .action-btn span { font-size: 20px; }
+    .action-btn.primary { background: #e8f0fe; color: #1a73e8; border-color: #d2e3fc; }
+
+    .menu-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+    .menu-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+    .menu-price { font-weight: 700; color: var(--primary); }
+
+    /* Placeholder para el Anuncio (El espacio que ocupa el anuncio real) */
+.ad-sticky {
+  position: fixed;
+  bottom: 0; /* Pegado al suelo */
+  left: 0;
+  width: 100%;
+  height: 50px; /* Altura estándar de AdMob */
+  background: #f0f0f0; /* Gris clarito por si no carga el anuncio */
+  border-top: 1px solid #e0e0e0;
+  z-index: 10001; /* ENCIMA del Nav si quisieras, pero aquí estará DEBAJO visualmente por la posición */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #999;
+  font-size: 10px;
+}
+  </style>
+</head>
+<body class="hidden fade">
+
+  <script src="ubicacion.js"></script>
+  
+  <div id="map"></div>
+
+  <div id="modal">
+    <div class="content" id="modalContent"></div>
+  </div>
+
+  <script src="Components/Nav.js"></script>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // ----------------------------------------
+    // CONFIGURACIÓN DE ADMOB (Variables)
+    // ----------------------------------------
+    // Usa estos IDs de prueba para desarrollo. 
+    // Al publicar en Play Store, cámbialos por los reales.
+    const ADMOB_IDS = {
+      androidBanner: 'ca-app-pub-3940256099942544/6300978111',
+      androidInterstitial: 'ca-app-pub-3940256099942544/1033173712'
+    };
+    
+    let interstitial; 
+    let admobReady = false;
+
+    // ----------------------------------------
+    // 1. INICIALIZAR ADMOB (AL CARGAR APP)
+    // ----------------------------------------
+    document.addEventListener('deviceready', async () => {
+      console.log("📱 App lista. Iniciando AdMob...");
+      
+      if (typeof admob === 'undefined') return;
+
+      try {
+        await admob.start();
+        admobReady = true;
+
+        // A. Mostrar Banner Inferior (Fijo)
+        const banner = new admob.BannerAd({
+          adUnitId: ADMOB_IDS.androidBanner,
+          position: 'bottom' // Se pega automáticamente al fondo
+        });
+        await banner.show();
+
+        // B. Pre-cargar el Interstitial (Para que esté listo luego)
+        prepararInterstitial();
+
+      } catch (e) {
+        console.error("Error AdMob:", e);
+      }
+    }, false);
+
+    async function prepararInterstitial() {
+      if (!admobReady) return;
+      try {
+        interstitial = new admob.InterstitialAd({
+          adUnitId: ADMOB_IDS.androidInterstitial
+        });
+        await interstitial.load();
+        console.log("✅ Anuncio Interstitial cargado en memoria");
+      } catch (e) {
+        console.log("Error cargando interstitial", e);
+      }
+    }
+
+    // Lógica inteligente para mostrar anuncio sin molestar
+    async function intentarMostrarAnuncio() {
+      if (!interstitial) return;
+
+      // REGLA: Solo mostrar el 30% de las veces (Probabilidad 0.3)
+      // Esto evita que el usuario se canse y desinstale la app.
+      if (Math.random() > 0.3) {
+        console.log("🎲 Suerte: No mostramos anuncio esta vez");
+        return; 
+      }
+
+      try {
+        await interstitial.show();
+        // Cargar el siguiente inmediatamente para el futuro
+        prepararInterstitial();
+      } catch (e) {
+        console.log("El anuncio no estaba listo para mostrarse");
+      }
+    }
+
+    // ----------------------------------------
+    // 2. UTILIDADES DE LA APP
+    // ----------------------------------------
+    const favoritos = JSON.parse(localStorage.getItem('favs_foodmap')) || [];
+
+    function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+      if(!lat1 || !lon1 || !lat2 || !lon2) return null;
+      const R = 6371; 
+      const dLat = (lat2 - lat1) * (Math.PI/180);
+      const dLon = (lon2 - lon1) * (Math.PI/180);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c; 
+    }
+
+    function parseHora(horaStr) {
+      if (!horaStr) return null;
+      const s = horaStr.toLowerCase().replace(/\s/g, ''); 
+      let horas = 0; let minutos = 0;
+      const isPM = s.includes('pm'); const isAM = s.includes('am');
+      const match = s.match(/(\d+)(?::(\d+))?/);
+      if (!match) return null;
+      horas = parseInt(match[1]);
+      minutos = match[2] ? parseInt(match[2]) : 0;
+      if (isPM && horas < 12) horas += 12;
+      if (isAM && horas === 12) horas = 0;
+      return horas + (minutos / 60);
+    }
+
+    function obtenerEstadoLocal(horarioStr) {
+      if (!horarioStr) return { estado: 'desconocido', texto: '' };
+      const partes = horarioStr.split('-');
+      if (partes.length !== 2) return { estado: 'desconocido', texto: '' };
+      const abre = parseHora(partes[0]);
+      const cierra = parseHora(partes[1]);
+      if (abre === null || cierra === null) return { estado: 'desconocido', texto: '' };
+      const ahora = new Date();
+      const horaActual = ahora.getHours() + (ahora.getMinutes() / 60);
+      let cierraAjustado = cierra;
+      let horaActualAjustada = horaActual;
+      if (cierra < abre) { cierraAjustado += 24; if (horaActual < abre) horaActualAjustada += 24; }
+      
+      if (horaActualAjustada >= abre && horaActualAjustada < cierraAjustado) {
+        const tiempoRestante = cierraAjustado - horaActualAjustada;
+        if (tiempoRestante <= 1) return { estado: 'closing', texto: '⚠️ Cierra pronto' };
+        return { estado: 'open', texto: '🟢 Abierto ahora' };
+      } else {
+        return { estado: 'closed', texto: '🔴 Cerrado' };
+      }
+    }
+
+    // ----------------------------------------
+    // 3. MAPA & LOGICA
+    // ----------------------------------------
+    const map = L.map('map', {
+      zoomControl: false,
+      minZoom: 13,
+      maxZoom: 19
+    }).setView([7.065278, -73.854167], 14);
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
+      maxZoom: 20
+    }).addTo(map);
+
+    function crearIcono(size) {
+      return L.divIcon({
+        html: `
+          <svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));">
+            <circle cx="12" cy="12" r="10" fill="#ff5722" stroke="#ffffff" stroke-width="2"/>
+            <path d="M12 7v10M7 12h10" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        `,
+        className: "custom-marker",
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2]
+      });
+    }
+
+    let localesData = [];
+    const markers = [];
+    const markerLabels = [];
+
+    fetch("locales.json")
+      .then(res => res.json())
+      .then(data => {
+        localesData = data.locales;
+
+        localesData.forEach(local => {
+          const marker = L.marker(local.coords, { icon: crearIcono(38) }).addTo(map);
+          markers.push(marker);
+
+          const labelIcon = L.divIcon({
+            html: `<div class="label-nombre">${local.nombre}</div>`,
+            className: "", iconSize: null, iconAnchor: [40, -10]
+          });
+          const labelMarker = L.marker(local.coords, { icon: labelIcon, interactive: false }).addTo(map);
+          markerLabels.push({ marker, labelMarker });
+
+          marker.on("click", () => {
+             const offsetLat = local.coords[0] - 0.002; 
+             map.flyTo([offsetLat, local.coords[1]], 16, { duration: 1 });
+             abrirModal(local);
+          });
+        });
+
+        actualizarLabels();
+        
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        if (id) {
+          const local = localesData.find(l => l.id == id);
+          if (local) {
+            setTimeout(() => { 
+               map.setView(local.coords, 17);
+               abrirModal(local);
+            }, 500);
+          }
+        }
+      });
+
+    // ----------------------------------------
+    // 4. FUNCIONES MODAL (CON TRIGGER ADMOB)
+    // ----------------------------------------
+    function abrirModal(local) {
+      const modal = document.getElementById("modal");
+      const content = document.getElementById("modalContent");
+
+      const mensajeReporte = encodeURIComponent(`Hola, quiero reportar un error en *${local.nombre}* (ID: ${local.id})...`);
+      const whatsappAdmin = "573019478430";
+
+      const estado = obtenerEstadoLocal(local.horario);
+      let estadoClass = estado.estado === 'open' ? 'status-open' : (estado.estado === 'closing' ? 'status-closing' : 'status-closed');
+
+      let distHTML = '';
+      if(window.userCoords) {
+        const dist = calcularDistanciaKm(window.userCoords.lat, window.userCoords.lng, local.coords[0], local.coords[1]);
+        if(dist) distHTML = `<span class="dist-badge">📍 A ${dist.toFixed(1)} km de ti</span>`;
+      }
+
+      const esFav = favoritos.includes(local.id);
+
+      const menuHTML = local.menu.map(item => `
+        <div class="menu-item">
+          <span>${item.nombre}</span>
+          <span class="menu-price">$${item.precio.toLocaleString()}</span>
+        </div>
+      `).join("");
+
+      const imgUrl = local.fotos && local.fotos[0] ? local.fotos[0] : 'https://via.placeholder.com/400x200?text=Sin+Foto';
+
+      content.innerHTML = `
+        <div class="modal-header-img">
+          <img src="${imgUrl}" alt="${local.nombre}">
+          <button class="btn-close-float" onclick="cerrarModal()">×</button>
+          <button class="btn-fav-float ${esFav ? 'active' : ''}" onclick="toggleFav(this, ${local.id})">
+            ${esFav ? '❤️' : '🤍'}
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <h2>${local.nombre}</h2>
+          <p class="desc">${local.descripcion}</p>
+
+          <div class="badges-row">
+            <div class="status-badge ${estadoClass}">${estado.texto}</div>
+            ${distHTML}
+          </div>
+
+          <div class="action-grid">
+             <a href="http://googleusercontent.com/maps.google.com/maps?daddr=${local.coords[0]},${local.coords[1]}" target="_blank" class="action-btn primary">
+               <span>🗺️</span> Cómo llegar
+             </a>
+             <a href="https://wa.me/57${local.telefono}" target="_blank" class="action-btn">
+               <span>💬</span> Pedir
+             </a>
+             <a href="tel:${local.telefono}" class="action-btn">
+               <span>📞</span> Llamar
+             </a>
+          </div>
+
+          <div class="menu-title">Menú Destacado</div>
+          ${menuHTML}
+          
+          <a href="https://wa.me/${whatsappAdmin}?text=${mensajeReporte}" target="_blank" class="btn-reportar">
+            ⚠️ ¿Información incorrecta? Repórtalo aquí
+          </a>
+          <div style="height: 40px"></div>
+        </div>
+      `;
+      modal.classList.add("active");
+    }
+
+    function cerrarModal() {
+      document.getElementById("modal").classList.remove("active");
+      
+      // >>> AQUÍ ESTÁ EL TRUCO <<<
+      // Intentamos mostrar anuncio al cerrar, pero la función decide si lo hace o no (30%)
+      intentarMostrarAnuncio();
+    }
+    
+    document.getElementById("modal").addEventListener("click", (e) => {
+      if(e.target.id === "modal") cerrarModal();
+    });
+
+    // ----------------------------------------
+    // 5. OTROS
+    // ----------------------------------------
+    function toggleFav(btn, id) {
+      const index = favoritos.indexOf(id);
+      if (index === -1) {
+        favoritos.push(id);
+        btn.innerHTML = '❤️';
+        btn.classList.add('active');
+      } else {
+        favoritos.splice(index, 1);
+        btn.innerHTML = '🤍';
+        btn.classList.remove('active');
+      }
+      localStorage.setItem('favs_foodmap', JSON.stringify(favoritos));
+    }
+
+    function actualizarLabels() {
+      const zoom = map.getZoom();
+      markerLabels.forEach(obj => {
+        const labelDiv = obj.labelMarker._icon?.querySelector(".label-nombre");
+        if (!labelDiv) return;
+        labelDiv.style.display = zoom >= 16 ? "block" : "none";
+      });
+    }
+
+    map.on("zoomend", actualizarLabels);
+
+  </script>
+</body>
+</html>

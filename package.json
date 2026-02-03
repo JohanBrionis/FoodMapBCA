@@ -1,0 +1,19 @@
+{
+  "name": "barrancafood",
+  "version": "1.0.0",
+  "main": "home.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
+  "dependencies": {
+    "@capacitor-community/admob": "^7.2.0",
+    "@capacitor/android": "^8.0.2",
+    "@capacitor/cli": "^7.4.5",
+    "@capacitor/core": "^8.0.2"
+  }
+}

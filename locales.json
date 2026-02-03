@@ -1,0 +1,138 @@
+{
+  "locales": [
+    {
+      "id": 1,
+      "nombre": "Arepas Doña Ana",
+      "categoria": "Arepas",
+      "tags": ["arepa", "maiz", "queso", "desayuno", "cena", "rapida", "tradicional"],
+      "coords": [7.059322, -73.861502],
+      "descripcion": "Arepas rellenas con la mejor masa artesanal del barrio Colombia.",
+      "direccion": "Calle 49, Esquina del Parque Infantil, Barrio Colombia",
+      "telefono": "3001234567",
+      "horario": "6:00 PM - 11:00 PM",
+      "delivery": true,
+      "tiempo_entrega": "15-25 min",
+      "calificacion": 4.5,
+      "metodos_pago": ["Nequi", "Efectivo"],
+      "fotos": [
+        "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=800&auto=format&fit=crop"
+      ],
+      "menu": [
+        { "nombre": "Arepa Especial", "precio": 12500 },
+        { "nombre": "Arepa Mixta", "precio": 10500 },
+        { "nombre": "Arepa de Pollo", "precio": 9500 },
+        { "nombre": "Arepa de Carne", "precio": 9500 },
+        { "nombre": "Arepa Hawaiana", "precio": 6500 },
+        { "nombre": "Arepa Jamón y Queso", "precio": 5000 },
+        { "nombre": "Arepa Mortadela y Queso", "precio": 4000 },
+        { "nombre": "Fritas de Maíz", "precio": 3000 }
+      ],
+      "rangos_precios": { "min": 3000, "max": 12500 },
+      "redes": {
+        "facebook": null,
+        "instagram": null,
+        "tiktok": null
+      }
+    },
+    {
+      "id": 2,
+      "nombre": "Sazón Bipolar",
+      "categoria": "Hamburguesas",
+      "tags": ["hamburguesa", "perro", "desgranado", "salchipapa", "comida rapida", "caliente"],
+      "coords": [7.05687, -73.865365],
+      "descripcion": "Comida rápida de barrio con sabores únicos y porciones generosas.",
+      "direccion": "Calle 47, Barrio El Dorado",
+      "telefono": "3502997225",
+      "horario": "Mié - Dom: 5:00 PM - 12:00 AM",
+      "delivery": true,
+      "tiempo_entrega": "30-45 min",
+      "calificacion": 4.2,
+      "metodos_pago": ["Nequi", "Efectivo"],
+      "fotos": [
+        "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?q=80&w=800&auto=format&fit=crop"
+      ],
+      "menu": [
+        { "nombre": "Desgranado", "precio": 19000 },
+        { "nombre": "Hamburguesa Sencilla", "precio": 13000 },
+        { "nombre": "Salchipapa", "precio": 13000 },
+        { "nombre": "Choripapa", "precio": 15000 },
+        { "nombre": "Perro Sencillo", "precio": 8000 },
+        { "nombre": "Perro Americano", "precio": 10000 }
+      ],
+      "rangos_precios": { "min": 8000, "max": 19000 },
+      "redes": {
+        "facebook": null,
+        "instagram": null,
+        "tiktok": null
+      }
+    },
+    {
+      "id": 3,
+      "nombre": "La Tía",
+      "categoria": "Hamburguesas",
+      "tags": ["picada", "salchipapa", "choripapa", "fritanga", "familiar", "economico"],
+      "coords": [7.059477, -73.861336],
+      "descripcion": "Especialistas en picadas y comida rápida tradicional para compartir.",
+      "direccion": "Calle 49, Esquina del Parque Infantil, Barrio Colombia",
+      "telefono": "3108730217",
+      "horario": "6:00 PM - 12:00 AM",
+      "delivery": true,
+      "tiempo_entrega": "25-35 min",
+      "calificacion": 4.0,
+      "metodos_pago": ["Nequi", "Efectivo"],
+      "fotos": [
+        "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800&auto=format&fit=crop"
+      ],
+      "menu": [
+        { "nombre": "Picada", "precio": 28000 },
+        { "nombre": "Salchipapa", "precio": 13000 },
+        { "nombre": "Choripapa", "precio": 14000 },
+        { "nombre": "Salchichoripapa", "precio": 17000 },
+        { "nombre": "Hamburguesa", "precio": 11000 },
+        { "nombre": "Hamburguesa + papas", "precio": 14000 },
+        { "nombre": "Perros sencillos", "precio": 5000 },
+        { "nombre": "Choriperro", "precio": 9000 }
+      ],
+      "rangos_precios": { "min": 5000, "max": 28000 },
+      "redes": {
+        "facebook": null,
+        "instagram": null,
+        "tiktok": null
+      }
+    },
+    {
+      "id": 4,
+      "nombre": "Triple HP",
+      "categoria": "Hamburguesas",
+      "tags": ["gigante", "hamburguesa", "monstruo", "picada", "reto", "grande"],
+      "coords": [7.06242, -73.854347],
+      "descripcion": "Comidas rápidas gigantes: Picadas, Hamburguesas y Perros para el hambre voraz.",
+      "direccion": "Cl. 52B, Carrera 24, Barrancabermeja",
+      "telefono": "3102587122",
+      "horario": "6:00 PM - 12:00 AM",
+      "delivery": true,
+      "tiempo_entrega": "40-50 min",
+      "calificacion": 4.7,
+      "metodos_pago": ["Nequi", "Efectivo"],
+      "fotos": [
+        "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&auto=format&fit=crop"
+      ],
+      "menu": [
+        { "nombre": "Hamburguesa Triple", "precio": 11000 },
+        { "nombre": "Hamburguesa Super", "precio": 13000 },
+        { "nombre": "Picada x3", "precio": 23000 },
+        { "nombre": "Picada x4", "precio": 33000 },
+        { "nombre": "Picada Triple HP", "precio": 45000 },
+        { "nombre": "Salchipapa", "precio": 11000 },
+        { "nombre": "Perro Triple", "precio": 12000 },
+        { "nombre": "Perro Super", "precio": 14000 }
+      ],
+      "rangos_precios": { "min": 6000, "max": 45000 },
+      "redes": {
+        "facebook": null,
+        "instagram": null,
+        "tiktok": null
+      }
+    }
+  ]
+}
