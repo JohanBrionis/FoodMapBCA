@@ -1,5 +1,6 @@
 {
   "appId": "com.foodmap.barranca",
   "appName": "FoodMap Bca",
-  "webDir": "."
+  "webDir": "www",
+  "bundledWebRuntime": false
 }
