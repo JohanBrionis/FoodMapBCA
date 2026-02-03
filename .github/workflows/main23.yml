@@ -1,0 +1,58 @@
+name: Construir FoodMap APK v2026
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Bajar tu código usando la versión más reciente (v4)
+      - uses: actions/checkout@v4
+
+      # 2. Instalar Java 17 (La versión más estable para compilar Android)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 3. Instalar Node.js 20 (LTS oficial para Capacitor moderno)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 4. Instalar dependencias frescas
+      - name: Instalar Dependencias
+        run: |
+          npm install
+          npm update
+
+      # 5. Sincronizar y preparar Android
+      # Usamos "npx cap add android" solo si no existe, para evitar errores
+      - name: Preparar Android
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+
+      # 6. Compilar el APK con Gradle (Este paso descarga las librerías de Google)
+      - name: Compilar APK con Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 7. Subir el APK usando la versión v4 (Soluciona tu error de 'deprecated')
+      - name: Subir APK Resultante
+        uses: actions/upload-artifact@v4
+        with:
+          name: FoodMap-Barranca-Instalador
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 5 # El archivo se borrará de GitHub en 5 días para ahorrar espacio
